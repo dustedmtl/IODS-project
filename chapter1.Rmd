@@ -2,7 +2,9 @@
 
 The course is about learning to use R with statistics in, with an emphasis on using it with github. My objective for attending the course is refreshing my knowledge on R and statistics in general. The course has been on my "TODO" plan on PhD studies for a while.
 
-GitHub repository: <https://github.com/dustedmtl/IODS-project>
+I think the R Data Health book works well for an introduction, although - as I'm not a complete novice. I didn't read the chapters quite thoroughly - there's a lot to take in in short time (I missed the exercises in chapter 3, but not chapter 4). Perhaps the book works more as a sample now and later as a reference.
+
+There have been quite a few new things since I last used R, like the tidyverse pipe. I'm glad there is a possibility of using the "language-agnostic standard" of using `=` for assignment instead of (or in addition to) `<-`, which I've always found odd. A lot of things are similar to features in pandas in Python data analysis (not surprising, as pandas has taken quite a bit of inspiration from R).
 
 ```{r}
 # This is a so-called "R chunk" where you can write R code.
@@ -11,4 +13,4 @@ date()
 
 ```
 
-The text continues here.
+GitHub repository: <https://github.com/dustedmtl/IODS-project>
