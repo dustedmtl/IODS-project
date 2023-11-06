@@ -1,7 +1,8 @@
-
 # About the project
 
-*Write a short description about the course and add a link to your GitHub repository here. This is an R Markdown (.Rmd) file so you should use R Markdown syntax.*
+The course is about learning to use R with statistics in, with an emphasis on using it with github. My objective for attending the course is refreshing my knowledge on R and statistics in general. The course has been on my "TODO" plan on PhD studies for a while.
+
+GitHub repository: <https://github.com/dustedmtl/IODS-project>
 
 ```{r}
 # This is a so-called "R chunk" where you can write R code.
@@ -9,5 +10,5 @@
 date()
 
 ```
-The text continues here.
 
+The text continues here.

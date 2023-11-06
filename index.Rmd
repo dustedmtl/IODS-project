@@ -1,5 +1,6 @@
 ---
 title: "IODS course project"
+author: Sami Itkonen
 output:
   html_document:
     theme: cosmo
