@@ -1,13 +1,64 @@
-# Insert chapter 2 title here
+# Chapter 2: Regression and model validation
 
-*Describe the work you have done this week and summarize your learning.*
-
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
+*Data analysis*
 
 ```{r}
 date()
 ```
 
-Here we go again...
+The dataset that is read in contains averaged survey scores for three subjects, student attitude, exam points, age, and gender. There are 166 students.
+
+```{r}
+lr2 <- read.table('data/learning2014.csv', sep=',', header = T)
+dim(lr2)
+```
+
+```{r}
+summary(lr2)
+```
+
+```{r}
+library(ggplot2)
+library(GGally)
+p <- ggpairs(lr2, mapping = aes(), lower = list(combo = wrap("facethist", bins = 20)))
+
+# draw the plot
+p
+```
+
+The score variables deep, surf and stra are distributed between 1 and 5.
+
+Correlations in the data:
+
+-   points and attitude are strongly correlated
+
+-   points and stra are also correlated; likewise points and surf (negative correlation)
+
+-   age skews young and it isn't strongly correlated with anything.
+
+Linear regression model for variable points based on three explanatory variables: attitude, stra and surf:
+
+```{r}
+model <- lm(points ~ attitude + stra + surf, data = lr2)
+
+summary(model)
+```
+
+The test that the fitting is done is omnibus F-test, which tests the hypothesis that coefficients for all three variables are zero. The very low p-value for intercept means that this hypothesis is not likely to be true.
+
+The p-value for attitude (below 0.05) shows that the model fitting is reliable for it.
+
+```{r}
+
+# All four in the same plot
+par(mfrow = c(2,2))
+
+plot(model, which = c(1,2,5))
+
+```
+
+Above are three plots regarding residuals, where residual is a difference between the fitted and actual value.
+
+The first plot (residuals vs fitted) is symmetrical and there is no correlation between residual and fitted value. Linear regression model is appropriate here. The quantile plot points to the same direction.
+
+The last plot uses standardized residuals with identical variance. The result is similar to plot 1.
