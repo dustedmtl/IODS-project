@@ -36,6 +36,18 @@ Correlations in the data:
 
 -   age skews young and it isn't strongly correlated with anything.
 
+## Linear regression
+
+Linear regression is used to determine relation between a response variable and one of more (if multiple regression) explanatory variables. For a single variable, the equation to solve is:
+
+$Y = \alpha + \beta X + \epsilon$
+
+where all the terms are $N$-dimensional vectors (for $N$ observations). $Y$ is the response variable and $X$ is the explanatory variable. The $\epsilon$ error term is assumed to normally distributed with a mean of 0.
+
+The task is to find such coefficients for $\alpha$ and $\beta$ that minimize the sum $\sum_{i=1}^{N} \epsilon_i^2$. This is called the least squares method.
+
+For multiple linear regression the equation would be similarly $Y = \alpha + X\beta  + \epsilon$, where $X$ would be a matrix of dimensions $N * k$ (with $k$ explanatory variables) instead of a $N * 1$-dimensional vector.
+
 Linear regression model for variable points based on three explanatory variables: attitude, stra and surf:
 
 ```{r}
@@ -48,6 +60,8 @@ The test that the fitting is done is omnibus F-test, which tests the hypothesis 
 
 The p-value for attitude (below 0.05) shows that the model fitting is reliable for it.
 
+Multiple R squared value of 0.2074 means that the three variables account for 20 % of variation.
+
 ```{r}
 
 # All four in the same plot
@@ -59,6 +73,8 @@ plot(model, which = c(1,2,5))
 
 Above are three plots regarding residuals, where residual is a difference between the fitted and actual value.
 
-The first plot (residuals vs fitted) is symmetrical and there is no correlation between residual and fitted value. Linear regression model is appropriate here. The quantile plot points to the same direction.
+The first plot (residuals vs fitted) is symmetrical and there is no correlation between residual and fitted value. Linear regression model is appropriate here.
+
+The second plot shows quantiles against each other. This plot is linear too, so linear regression model is still valid.
 
 The last plot uses standardized residuals with identical variance. The result is similar to plot 1.

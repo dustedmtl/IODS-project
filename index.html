@@ -379,7 +379,11 @@ to Open Data Science - Course Project</a></li>
 <li><a href="#about-the-project" id="toc-about-the-project">About the
 project</a></li>
 <li><a href="#chapter-2-regression-and-model-validation" id="toc-chapter-2-regression-and-model-validation">Chapter 2: Regression
-and model validation</a></li>
+and model validation</a>
+<ul>
+<li><a href="#linear-regression" id="toc-linear-regression">Linear
+regression</a></li>
+</ul></li>
 </ul>
 </div>
 
@@ -408,7 +412,7 @@ inspiration from R).</p>
 <pre class="r"><code># This is a so-called &quot;R chunk&quot; where you can write R code.
 
 date()</code></pre>
-<pre><code>## [1] &quot;Sun Nov 12 19:10:07 2023&quot;</code></pre>
+<pre><code>## [1] &quot;Sun Nov 12 23:58:51 2023&quot;</code></pre>
 <p>GitHub repository: <a href="https://github.com/dustedmtl/IODS-project" class="uri">https://github.com/dustedmtl/IODS-project</a></p>
 <hr />
 </div>
@@ -416,7 +420,7 @@ date()</code></pre>
 <h1>Chapter 2: Regression and model validation</h1>
 <p><em>Data analysis</em></p>
 <pre class="r"><code>date()</code></pre>
-<pre><code>## [1] &quot;Sun Nov 12 19:10:07 2023&quot;</code></pre>
+<pre><code>## [1] &quot;Sun Nov 12 23:58:51 2023&quot;</code></pre>
 <p>The dataset that is read in contains averaged survey scores for three
 subjects, student attitude, exam points, age, and gender. There are 166
 students.</p>
@@ -458,6 +462,21 @@ p</code></pre>
 <li><p>age skews young and it isn’t strongly correlated with
 anything.</p></li>
 </ul>
+<div id="linear-regression" class="section level2">
+<h2>Linear regression</h2>
+<p>Linear regression is used to determine relation between a response
+variable and one of more (if multiple regression) explanatory variables.
+For a single variable, the equation to solve is:</p>
+<p><span class="math inline">\(Y = \alpha + \beta X +
+\epsilon\)</span></p>
+<p>where all the terms are <span class="math inline">\(N\)</span>-dimensional vectors (for <span class="math inline">\(N\)</span> observations). <span class="math inline">\(Y\)</span> is the response variable and <span class="math inline">\(X\)</span> is the explanatory variable. The <span class="math inline">\(\epsilon\)</span> error term is assumed to
+normally distributed with a mean of 0.</p>
+<p>The task is to find such coefficients for <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> that minimize the sum <span class="math inline">\(\sum_{i=1}^{N} \epsilon_i^2\)</span>. This is
+called the least squares method.</p>
+<p>For multiple linear regression the equation would be similarly <span class="math inline">\(Y = \alpha + X\beta + \epsilon\)</span>, where
+<span class="math inline">\(X\)</span> would be a matrix of dimensions
+<span class="math inline">\(N * k\)</span> (with <span class="math inline">\(k\)</span> explanatory variables) instead of a
+<span class="math inline">\(N * 1\)</span>-dimensional vector.</p>
 <p>Linear regression model for variable points based on three
 explanatory variables: attitude, stra and surf:</p>
 <pre class="r"><code>model &lt;- lm(points ~ attitude + stra + surf, data = lr2)
@@ -489,6 +508,8 @@ low p-value for intercept means that this hypothesis is not likely to be
 true.</p>
 <p>The p-value for attitude (below 0.05) shows that the model fitting is
 reliable for it.</p>
+<p>Multiple R squared value of 0.2074 means that the three variables
+account for 20 % of variation.</p>
 <pre class="r"><code># All four in the same plot
 par(mfrow = c(2,2))
 
@@ -498,12 +519,15 @@ plot(model, which = c(1,2,5))</code></pre>
 difference between the fitted and actual value.</p>
 <p>The first plot (residuals vs fitted) is symmetrical and there is no
 correlation between residual and fitted value. Linear regression model
-is appropriate here. The quantile plot points to the same direction.</p>
+is appropriate here.</p>
+<p>The second plot shows quantiles against each other. This plot is
+linear too, so linear regression model is still valid.</p>
 <p>The last plot uses standardized residuals with identical variance.
 The result is similar to plot 1.</p>
 <hr />
 <p>(more chapters to be added similarly as we proceed with the
 course!)</p>
+</div>
 </div>
 
 
