@@ -1,0 +1,173 @@
+# Chapter 3: Logistic regression
+
+```{r}
+date()
+```
+
+In the previous section we covered linear regression. Here we consider some cases where its use may be inappropriate. In particular, linear regression relies on the response variable being normally distributed. It might not even be continuous. In the case of a binary response variable we would prefer to use logistic regression
+
+$log(\frac p {1-p}) = \alpha + \beta * X$
+
+where $p$ is the probability of one outcome and $1-p$ probability of the other outcome, with $\beta$ and $X$ being coefficient and variable vectors for explanatory variables, which are multiplied element-wise.
+
+Here $\frac p {1-p}$ are the odds for one outcome against another outcome (the usability of using odds instead of probabilities comes from fact that the fitted lines featuring the former are expected to be straight)
+
+## Data analysis
+
+The data set for analysis comes from studies about Portuguese students' alcohol consumption:
+
+<http://www.archive.ics.uci.edu/dataset/320/student+performance>
+
+```{r}
+library(dplyr)
+alc <- read.table('data/alc_data.csv', sep=',', header = T)
+glimpse(alc)
+```
+
+The data has been combined from mathematics and Portuguese classes:
+
+The data has a number of variables related to grading (G1, G2 and G3), absences, extra classes (*paid*) and previous failures (*failures*). It also has information about alcohol usage, including a boolean column for high alcohol usage (*high_use*). The rest are a variety of either numerical or categorical metadata columns.
+
+The objective is to analyze the relation of alcohol consumption to the various categories. The hypothesis is that high alcohol consumption will lead to
+
+-   lower grades (especially *G3*)
+
+-   more *absences*
+
+The student will also have spent less time on studying (*studytime*) and will not have had *paid* classes.
+
+### Viewing the data
+
+```{r}
+library(tidyr); library(dplyr); library(ggplot2)
+
+# install.packages("patchwork")
+library(patchwork)
+
+# initialize a plot of high_use and G3
+g1 <- ggplot(alc, aes(x = high_use, y = G3, col = sex))
+g1 <- g1 + geom_boxplot() + ylab("final grade")
+
+g11 <- ggplot(alc, aes(x = sex, y = G3, col = high_use))
+g11 <- g11 + geom_boxplot() + ylab("final grade")
+
+g2 <- ggplot(alc, aes(x = high_use, y = absences, col = sex))
+g2 <- g2 + geom_boxplot() + ylab("absences")
+
+g3 <- ggplot(alc, aes(x = studytime, y = high_use))
+g3 <- g3 + geom_col() + ylab("high use")
+
+g4 <- ggplot(alc, aes(x = paid, y = high_use))
+g4 <- g4 + geom_boxplot() + ylab("high use")
+
+g1 + g11 + g2 + g3
+
+```
+
+Grades are lower and there are more absences with high alcohol usage, although the effect is more pronounced for men than women. Students with high alcohol consumption spent a lot less time on studying.
+
+```{r}
+gh <- ggplot(alc, aes(x = studytime))
+gh <- gh + geom_histogram()
+
+gh2 <- ggplot(alc, aes(x = studytime))
+gh2 <- gh2 + geom_histogram()
+
+gh + gh2
+```
+
+```{r}
+
+table(high_use = alc$high_use, paid = alc$paid)
+
+```
+
+Those with low alcohol consumption used fewer paid classes, although the difference is not dramatic. My hypothesis was thus incorrect; it's possible that students who use a lot of alcohol need the extra classes (perhaps to compensate for lack of study time?).
+
+### Logistic regression model
+
+```{r}
+m <- glm(high_use ~ G3 + absences + studytime + paid, data = alc, family = "binomial")
+
+# print out a summary of the model
+summary(m)
+
+# print out the coefficients of the model
+coef(m)
+```
+
+The low P-values for *absences* and *studytime* indicate high correlation. Surprisingly (?) grades do not.
+
+```{r}
+# compute odds ratios (OR)
+OR <- coef(m) %>% exp
+
+# compute confidence intervals (CI)
+CI <- confint(m) %>% exp
+
+# print out the odds ratios with their confidence intervals
+cbind(OR, CI)
+```
+
+For grades (*G3*) and *paid* classes, 1.0 is within the confidence interval, thus there is no evidence that these variables are associated with high alcohol usage.
+
+### Predictions
+
+```{r}
+m2 <- glm(high_use ~ absences + studytime, data = alc, family = "binomial")
+
+probabilities <- predict(m2, type = "response")
+
+# add probability
+alc2 <- mutate(alc, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alc2 <- mutate(alc2, prediction = probability > 0.5)
+
+table(high_use = alc2$high_use, prediction = alc2$prediction)
+
+```
+
+```{r}
+
+# tabulate the target variable versus the predictions
+table(high_use = alc2$high_use, prediction = alc2$prediction) %>% prop.table() %>% addmargins()
+
+# define a loss function (mean prediction error)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+# call loss_func to compute the average number of wrong predictions in the (training) data
+loss_func(class = alc2$high_use, prob = alc2$prediction)
+
+```
+
+The probability of incorrect predictions is 28.1 %.
+
+```{r}
+
+table(high_use = alc2$high_use, high_absences = alc2$absences > 1) %>% prop.table() %>% addmargins()
+
+table(high_use = alc2$high_use, low_study = alc2$studytime < 2) %>% prop.table() %>% addmargins()
+
+table(high_use = alc2$high_use, low_study_high_absence = alc2$studytime < 2 | alc2$absences > 1) %>% prop.table() %>% addmargins()
+
+```
+
+Guessing based on simple metrics such as low studytime and high absences it is not possible to get good predictions.
+
+### Cross-validation
+
+```{r}
+# K-fold cross-validation
+library(boot)
+cv <- cv.glm(data = alc2, cost = loss_func, glmfit = m2, K = 10)
+
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+
+```
+
+Unexpectedly the cross-validation does not improve the previous result.
