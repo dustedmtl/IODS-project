@@ -1,0 +1,281 @@
+# Chapter 4: Multivariate analysis, clustering and classification
+
+```{r}
+date()
+```
+
+### Multivariate analysis
+
+In multivariate analysis several variables are analysed at the same. The difference between analysing a single response variable and multivariate analysis is that in the latter you do not expect to "explain" a single variable in terms of another, rather than (often) exploring connections between the variables.
+
+It is useful to graphically explore the relations between variables, for example using boxplots, scatterplots. Normality of the data can be assessed with quantile plots.
+
+### Clustering
+
+The purpose of clustering is to group items into mutually exlcusive groups. The members of a single group should be closer to each other than to members of other groups.
+
+A common metric for determining the difference between items is the Euclidean distance:
+
+$d_{ij} = \sqrt{\sum_{k=1}^{q}(x_{ik}-x{jk})^2}$
+
+Another option is manhattan distance, which assumes "block-wise" traversal, i.e. you can only go up/down or north/south along the streets.
+
+The distance metrics are obviously sensitive to different scales; for it to work the data may have to be scaled around the mean and normalized according to standard deviation:
+
+$scaled(x) = \frac{x - mean(x)}{ sd(x)}$
+
+#### Hierarchical clustering
+
+In hierarchical clustering each item is iteratively connected to their closest sub-clusters (either single items or clusters previously defined based on them). There are three common ways to measure the distance between clusters:
+
+-   Single linkage
+
+-   Maximum linkage
+
+-   Average linkage
+
+In single linkage, the distance between clusters is based on the closest distance between any members of the respective clusters. Maximum and average linkage are based on maximum and average distance, respectively. Hieratchical clustering produces a tree-like dendrogram.
+
+#### K-means clustering
+
+The k-means algorithm seeks group items into $k$ clusters based on some criteria. Distance metrics (over all items) may be used. The issue with this method is that for a large amount of data, calculating the overall distances may be computationally infeasible. An alternative is to choose some initial clustering and then iteratively make small changes to them, only keeping those changes that improve whatever criteria are used to measure "best fit".
+
+## Data analysis
+
+We are analysing Boston housing market data and its relations to various variables. The details about the data set are found here:
+
+<https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html>
+
+```{r, echo=FALSE}
+library(MASS)
+library(tidyr)
+library(corrplot)
+
+# load the data
+data("Boston")
+
+# explore the dataset
+str(Boston)
+
+```
+
+In addition to median house price, the variables include: crime rate; taxes; ratio of black population; access to education, employment and transportation, among other things.
+
+Renaming the variables to be more descriptive:
+
+```{r}
+names(Boston) = c("crime", "zone.pct", "ind.pct",
+                  "river", "nox.ppm",
+                  "rooms.avg", "age.pct",
+                  "dist", "roads.idx", "tax",
+                  "pupil.ratio", "black",
+                  "stat.pct", "price")
+
+str(Boston)
+```
+
+```{r}
+head(Boston)
+```
+
+The range of the values of the data vary; some are percentages, some are ratios, the rest have a variety of positive values (mainly above 1).
+
+```{r}
+cor_matrix <- cor(Boston) %>% round()
+corrplot(cor_matrix,
+         method="circle", type = "upper",
+         cl.pos = "b",
+         tl.pos = "d", tl.cex = 0.6)
+
+```
+
+The correlation matrix shows positive correlations between crime and taxation and road access. The house price is positively correlated with average number of rooms (there is no variable for house *size* itself) and negatively correlated with pupil-teacher ratio (i.e. fewer teachers per pupil) and lower status of the population.
+
+Access to river doesn't seem to be correlated with anything.
+
+To be able to properly analyze the data, we need to scale it.
+
+```{r}
+boston_scaled <- as.data.frame(scale(Boston))
+boston_scaled$crime <- as.numeric(boston_scaled$crime)
+summary(boston_scaled$crime)
+```
+
+We create a categorical variable for the crime rates.
+
+```{r}
+bins <- quantile(boston_scaled$crime)
+bins
+
+# create a categorical variable 'crime'
+crime <- cut(boston_scaled$crim,
+             breaks = bins,
+             include.lowest = TRUE,
+             labels = c("low", "med_low", "med_high", "high")
+             )
+boston_scaled <- dplyr::select(boston_scaled, -crime)
+
+# add the new categorical value to scaled data
+boston_scaled <- data.frame(boston_scaled, crime)
+
+```
+
+```{r}
+head(boston_scaled)
+```
+
+```{r, echo=FALSE}
+library(ggplot2)
+library(reshape2)
+ggplot(melt(boston_scaled), aes(x=value)) + geom_histogram() + facet_wrap(~variable) 
+```
+
+The newly scaled variables have a mean of zero.
+
+#### Train and test sets
+
+```{r}
+n <- nrow(boston_scaled)
+
+# choose randomly 80% of the rows
+ind <- sample(n,  size = n * 0.8)
+
+# create train set
+train <- boston_scaled[ind,]
+
+# create test set 
+test <- boston_scaled[-ind,]
+
+# save the correct classes from test data
+correct_classes <- test$crime
+
+# remove the crime variable from test data
+test <- dplyr::select(test, -crime)
+```
+
+#### Linear discriminant analysis (LDA)
+
+LDA is used to reduce the dimensions of the data. Here we want to see which variables are of most relevant to crime rates.
+
+```{r}
+lda.fit <- lda(crime ~ ., data = train)
+
+# print the lda.fit object
+lda.fit
+
+# the function for lda biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  graphics::arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+```
+
+The first component explains 95% of the variable to be analyzed. The highest coefficient for it is *roads.idx*, that is, index of accessiblity to radial highways, followed by nitrous oxide pollution, percentage of old houses and lower status of population.
+
+```{r}
+# target classes as numeric
+classes <- as.numeric(train$crime)
+
+plot(lda.fit,
+     dimen = 2,
+     col = classes,
+     pch = classes)
+lda.arrows(lda.fit, myscale = 2)
+
+```
+
+The plot confirms that it is the roads access that has most relevance to crime rates.
+
+```{r}
+lda.pred <- predict(lda.fit, newdata = test)
+
+# cross tabulate the results
+table(correct = correct_classes, predicted = lda.pred$class)
+```
+
+```{r}
+table(correct = correct_classes, predicted = lda.pred$class) %>% prop.table() %>% addmargins()
+```
+
+The method correctly classifies 74.5 % of the items.
+
+```{r}
+sum(correct_classes == lda.pred$class) / length(correct_classes)
+```
+
+### K-means
+
+#### Distances
+
+```{r}
+# center and standardize variables
+boston_scaled2 <- scale(Boston)
+
+names(boston_scaled2) = c("crime", "zone.pct", "ind.pct",
+                  "river", "nox.ppm",
+                  "rooms.avg", "age.pct",
+                  "dist", "roads.idx", "tax",
+                  "pupil.ratio", "black",
+                  "stat.pct", "price")
+
+# change the object to data frame
+boston_scaled2 = as.data.frame(boston_scaled2)
+
+# euclidean distance matrix
+dist_eu <- dist(boston_scaled2)
+
+# look at the summary of the distances
+summary(dist_eu)
+
+# manhattan distance matrix
+dist_man <- dist(boston_scaled2, method = "manhattan")
+
+# look at the summary of the distances
+summary(dist_man)
+```
+
+The Euclidean and Manhattan distances for the scaled dataset.
+
+```{r}
+km <- kmeans(boston_scaled2, centers = 3)
+
+# plot the Boston dataset with clusters
+pairs(boston_scaled2, col = km$cluster)
+```
+
+### Bonus
+
+```{r}
+km2 <- kmeans(Boston, centers = 3)
+
+# plot the Boston dataset with clusters
+pairs(Boston, col = km2$cluster)
+```
+
+### Super-Bonus exercise
+
+```{r}
+model_predictors <- dplyr::select(train, -crime)
+# check the dimensions
+dim(model_predictors)
+dim(lda.fit$scaling)
+# matrix multiplication
+matrix_product <- as.matrix(model_predictors) %*% lda.fit$scaling
+matrix_product <- as.data.frame(matrix_product)
+```
+
+```{r}
+library(plotly)
+plot_ly(x = matrix_product$LD1,
+        y = matrix_product$LD2,
+        z = matrix_product$LD3,
+        type= 'scatter3d', mode='markers',
+        color=train$crime,
+        )
+```
+
+Some clustering is shown based on the crime categories.
