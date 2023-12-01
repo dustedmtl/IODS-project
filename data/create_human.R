@@ -51,10 +51,28 @@ str(human)
 
 # 195 countries, 19 variables
 
+# 2. Keep only selected columns
+keep <- c("Country", "Edu2.FM", "Labo.FM", "Life.Exp", "Edu.Exp", "GNI", "Mat.Mor", "Ado.Birth", "Parli.F")
+human1 <- select(human, one_of(keep))
+
+# 3. Filter out rows with missing values
+human1 <- filter(human1, complete.cases(human1))
+
+# 4. Filter out rows relating to regions
+last <- nrow(human1) - 7
+human1 <- human1[1:last, ]
+
+# 155 rows, 9 variables
+# The data still looks expected
+summary(human1)
+str(human1)
+
 # Save the file
 library(tidyverse)
 
 setwd("~/Desktop/studies/phd/phd302/IODS-project")
 write_csv(human, 'data/human_data.csv')
 
+# 5. Save updated file (I chose to not overwrite the original)
+write_csv(human1, 'data/human_data_2.csv')
 
