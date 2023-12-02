@@ -1,0 +1,209 @@
+# Chapter 5: Dimensionality reduction techniques
+
+```{r}
+date()
+```
+
+### Principal Component Analysis (PCA)
+
+PCA is a method for transforming a set of correlated variables into a smaller set of uncorrelated and ordered variables: $x_1 .. x_q \to y_1 .. y_q$.
+
+The first component $y_1$ is the one with the highest sample variance. Written in terms of coefficients, $y_1 = \sum_{i=1}^q a_{1i} x_i$ with the restriction that the sum of squares of the coefficients $a_i$ is 1, that is $\sum a_i^2 = 1$. The rest of the coefficients are determined equivalently with additional restriction that the coefficients are uncorrelated with each other, e.g., for the second component $\sum_{i=0}^q a_{1q}a_{2q} = 0$.
+
+The coefficients can be extracted from the covariance or correlation matrices.
+
+#### Why do PCA?
+
+First of all, reducing the dimensions allows for easier analysis. PCA is especially useful for exploration, as we shall see.
+
+### Multidimensional Scaling and Correspondence Analysis
+
+For categorical variables, we can use Correspondence Analysis. In practical terms, the variables are converted to a correspondence matrix with the singular value decomposition method (SVD).
+
+## Data analysis
+
+The data set for analysis is originally from the UN Development Programme:
+
+<https://hdr.undp.org/system/files/documents/technical-notes-calculating-human-development-indices.pdf>
+
+The data set contains variables related to Human Development Index (HDI) and Gender Inequality Index (GII).
+
+The HDI calculation takes into account:
+
+-   life expectancy
+
+-   expected amount education
+
+-   per capita GNI
+
+The GII calculation takes into account:
+
+-   infant mortality
+
+-   female empowerment
+
+-   labour participation rates
+
+The data has been massages to only contain a small set of variables.
+
+### 1. Data Exploration
+
+```{r}
+library(corrplot)
+library(tibble)
+library(readr)
+
+human <- read_csv("data/human_data_2.csv", show_col_types = FALSE)
+human_ <- column_to_rownames(human, "Country")
+summary(human_)
+str(human_)
+```
+
+The variables that remain are:
+
+-   Male/female ratio for length of (and expected) education (*Edu2.FM*). Values above 1 mean females are educated for longer.
+
+-   Male/female ratio for labour participation (*Labo.FM*)
+
+-   Life Expectancy (*Life.Exp*)
+
+-   Length of Education (*Edu.Exp*)
+
+-   GNI Index (*GNI*)
+
+-   Maternal Mortality Ratio (*Mat.Mor*). Infant deaths per 10000 births.
+
+-   Adolescent Birth Rate (*Ado.Birth*)
+
+-   Share of female parliamentary participation (percentage) (*Parli.F*)
+
+```{r}
+# Access GGally
+library(GGally)
+
+# visualize the 'human_' variables
+ggpairs(human_, progress = FALSE)
+```
+
+```{r}
+# Access corrplot
+library(corrplot)
+# compute the correlation matrix and visualize it with corrplot
+cor(human_) %>% corrplot()
+```
+
+The two plots visualize the same correlation information in different ways. In the latter plot, the strength of the correlation is shown with the size of the circle and colors indicate sign of correlation (deep red = negative, deep blue = positive).
+
+Labor market participation ratio by gender doesn't seem to correlated with anything. Maternal mortality is strongly negatively correlated with life expectancy, female education ratio and length and positively correlated with adolescent birth rate; likewise with adolescent birth rate. The strong correlations can be seen from the scatterplots in the first plot. There are other obvious correlations with variables such as life expectancy and length of education.
+
+Some variables have a sort-of normal looking distribution (not going to run a test to verify this); others are skewed with long tails (like GNI and maternal mortality). Both have a large number of countries in the low end.
+
+### 2. Principal Component Analysis
+
+```{r}
+library(tibble)
+pca_human <- prcomp(human_)
+# create and print out a summary of pca_human
+s <- summary(pca_human)
+
+# rounded percentanges of variance captured by each PC
+pca_pr <- round(1*s$importance[2, ], digits = 5) * 100
+
+# print out the percentages of variance
+pc_lab <- print(pca_pr)
+
+#paste0(names(pca_pr), " (", pca_pr, "%)")
+```
+
+```{r}
+
+# draw a biplot
+biplot(pca_human,
+       cex = c(0.8, 1),
+       col = c("grey40", "deeppink2"),
+       xlab = pc_lab[1],
+       ylab = pc_lab[2])
+```
+
+In the unscaled case the first component explains 99% of variance; the biplot doesn't look useful. *GNI* explains it all, having the highest values by far.
+
+### 3. Standardized Principal Component Analysis
+
+```{r}
+human_std <- scale(human_)
+pca_human_scaled <- prcomp(human_std)
+
+# create and print out a summary of pca_human
+s_scaled <- summary(pca_human_scaled)
+
+# rounded percentanges of variance captured by each PC
+pca_pr_scaled <- round(1*s_scaled$importance[2, ], digits = 5) * 100
+
+# print out the percentages of variance
+pc_lab_scaled <- print(pca_pr_scaled)
+
+# paste0(names(pca_pr_scaled), " (", pca_pr_scaled, "%)")
+```
+
+```{r}
+# draw a biplot
+biplot(pca_human_scaled,
+       cex = c(0.8, 1),
+       col = c("grey40", "deeppink2"),
+       xlab = pc_lab_scaled[1],
+       ylab = pc_lab_scaled[2])
+```
+
+### 4. PCA interpretation
+
+Scaling the data is quite important for as the data contains variables with varying distributions (e.g., ratios around 1 on the lower end, life expectancies in the mid-range and GNI at the higher end). The purple arrows show the direction and strength of correlation related to the components.
+
+In the scaled case, the first two components account for around 70% of the variation. The second component seems to index female parliamentary participation percentage and labour market participation ratio and the first component the rest (either positively or negatively).
+
+### 5. Tea time with Correspondence Analysis
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+tea <- read.csv("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/tea.csv", stringsAsFactors = TRUE)
+
+keep_columns <- c("Tea", "How", "how", "sugar", "where", "lunch")
+
+# select the 'keep_columns' to create a new dataset
+tea_time <- select(tea, keep_columns)
+# look at the summaries and structure of the data
+summary(tea_time)
+str(tea_time)
+```
+
+The tea time data set contains 300 results from a questionnaire about tea consumption.
+
+```{r}
+head(tea_time)
+```
+
+```{r}
+pivot_longer(tea_time, cols = everything()) %>% 
+  ggplot(aes(value)) + geom_bar() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) +
+  facet_wrap("name", scales = "free")
+```
+
+Clearly tea time is a leisure time activity, mostly not being drunk at lunch time in a café (?). It is mostly drunk without lemon or milk.
+
+```{r}
+library(FactoMineR)
+mca <- MCA(tea_time, graph = FALSE)
+
+# summary of the model
+summary(mca)
+```
+
+The first dimension seems to be mostly indexing variable *How* (plain hot tea) and *where* (café or not). This is in line with the histogram plots.
+
+```{r}
+plot(mca, invisible=c("ind"), graph.type = "classic", habillage = "quali")
+```
+
+From the MCA plot, it would appear that one goes to a tea shop to drink loose tea for a tastier drink.
